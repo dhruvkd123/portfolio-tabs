@@ -1,0 +1,606 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Portfolio Tabs</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    background: #0a0a0a;
+    color: #fff;
+    min-height: 100vh;
+  }
+
+  /* ── Tab Bar ── */
+  .tab-bar {
+    display: flex;
+    align-items: center;
+    padding: 0 40px;
+    border-bottom: 1px solid #1e1e1e;
+    background: #0a0a0a;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+
+  .tab-btn {
+    background: none;
+    border: none;
+    color: #444;
+    font-size: 12px;
+    font-weight: 500;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    padding: 20px 0;
+    margin-right: 40px;
+    cursor: pointer;
+    position: relative;
+    transition: color 0.2s ease;
+  }
+  .tab-btn:hover { color: #888; }
+  .tab-btn.active { color: #ffffff; }
+  .tab-btn.active::after {
+    content: '';
+    position: absolute;
+    bottom: -1px;
+    left: 0; right: 0;
+    height: 1px;
+    background: #ffffff;
+  }
+
+  /* ── Tab Panels ── */
+  .tab-panel { display: none; padding: 48px 40px 80px; }
+  .tab-panel.active { display: block; }
+
+  /* ── Section Labels ── */
+  .section-label {
+    font-size: 10px;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: #3a3a3a;
+    margin-bottom: 24px;
+    font-weight: 500;
+  }
+
+  .section-divider {
+    border: none;
+    border-top: 1px solid #181818;
+    margin: 52px 0;
+  }
+
+  /* ── Short Form Grid (4 columns, portrait) ── */
+  .short-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 14px;
+  }
+
+  .short-card {
+    aspect-ratio: 9 / 16;
+    background: #111;
+    border-radius: 10px;
+    overflow: hidden;
+    position: relative;
+    cursor: pointer;
+    transition: transform 0.25s ease;
+  }
+  .short-card:hover { transform: scale(1.025); }
+
+  /* ── Long Form Grid (3 columns, landscape) ── */
+  .long-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 18px;
+  }
+
+  .long-card {
+    aspect-ratio: 16 / 9;
+    background: #111;
+    border-radius: 10px;
+    overflow: hidden;
+    position: relative;
+    cursor: pointer;
+    transition: transform 0.25s ease;
+  }
+  .long-card:hover { transform: scale(1.025); }
+
+  /* ── Card Internals ── */
+  .card-bg {
+    width: 100%; height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: absolute;
+    inset: 0;
+  }
+
+  .play-btn {
+    width: 40px; height: 40px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.07);
+    border: 1px solid rgba(255,255,255,0.12);
+    display: flex; align-items: center; justify-content: center;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+  }
+  .short-card:hover .play-btn,
+  .long-card:hover .play-btn { opacity: 1; }
+
+  .play-tri {
+    width: 0; height: 0;
+    border-style: solid;
+    border-width: 7px 0 7px 13px;
+    border-color: transparent transparent transparent #ffffff;
+    margin-left: 3px;
+  }
+
+  .card-overlay {
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    padding: 28px 12px 10px;
+    background: linear-gradient(transparent, rgba(0,0,0,0.9));
+  }
+
+  .card-title {
+    font-size: 11px;
+    color: #ccc;
+    font-weight: 500;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    letter-spacing: 0.02em;
+  }
+
+  .card-sub {
+    font-size: 9px;
+    color: #444;
+    margin-top: 3px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .card-num {
+    position: absolute;
+    top: 10px; left: 12px;
+    font-size: 9px;
+    color: #2a2a2a;
+    letter-spacing: 0.06em;
+    font-weight: 500;
+  }
+
+  /* ── Brands Tab ── */
+  .brands-intro {
+    text-align: center;
+    margin-bottom: 56px;
+  }
+  .brands-intro .eyebrow {
+    font-size: 10px;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: #333;
+    margin-bottom: 14px;
+    font-weight: 500;
+  }
+  .brands-intro h2 {
+    font-size: 28px;
+    font-weight: 300;
+    color: #fff;
+    letter-spacing: -0.025em;
+  }
+
+  /* ── Slider ── */
+  .slider-wrap {
+    overflow: hidden;
+    position: relative;
+    margin: 0 -40px;
+    padding: 16px 0;
+  }
+
+  .fade-left, .fade-right {
+    position: absolute;
+    top: 0; bottom: 0;
+    width: 100px;
+    z-index: 2;
+    pointer-events: none;
+  }
+  .fade-left  { left: 0;  background: linear-gradient(to right, #0a0a0a, transparent); }
+  .fade-right { right: 0; background: linear-gradient(to left,  #0a0a0a, transparent); }
+
+  .slider-track {
+    display: flex;
+    gap: 0;
+    width: max-content;
+    animation: slide-fwd 30s linear infinite;
+  }
+  .slider-track.reverse {
+    animation: slide-rev 24s linear infinite;
+  }
+  .slider-wrap:hover .slider-track { animation-play-state: paused; }
+
+  @keyframes slide-fwd {
+    from { transform: translateX(0); }
+    to   { transform: translateX(-50%); }
+  }
+  @keyframes slide-rev {
+    from { transform: translateX(-50%); }
+    to   { transform: translateX(0); }
+  }
+
+  .brand-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    padding: 0 44px;
+    min-width: 130px;
+    cursor: default;
+    opacity: 0.35;
+    transition: opacity 0.25s ease;
+  }
+  .brand-item:hover { opacity: 1; }
+
+  .brand-logo {
+    width: 46px; height: 46px;
+    border-radius: 11px;
+    background: #141414;
+    border: 1px solid #242424;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    font-weight: 600;
+    color: #fff;
+    letter-spacing: -0.02em;
+  }
+
+  .brand-name {
+    font-size: 10px;
+    color: #444;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    font-weight: 500;
+  }
+
+  .slider-gap { margin-top: 8px; }
+
+  /* ── Responsive ── */
+  @media (max-width: 900px) {
+    .short-grid { grid-template-columns: repeat(3, 1fr); }
+    .long-grid  { grid-template-columns: repeat(2, 1fr); }
+  }
+  @media (max-width: 600px) {
+    .tab-bar, .tab-panel { padding-left: 20px; padding-right: 20px; }
+    .short-grid { grid-template-columns: repeat(2, 1fr); }
+    .long-grid  { grid-template-columns: 1fr; }
+    .slider-wrap { margin: 0 -20px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ── Tab Navigation ── -->
+<div class="tab-bar">
+  <button class="tab-btn active" onclick="switchTab('projects', this)">Projects</button>
+  <button class="tab-btn"        onclick="switchTab('brands', this)">Brands</button>
+</div>
+
+<!-- ══════════════════════════════
+     TAB 1 — PROJECTS
+══════════════════════════════ -->
+<div id="panel-projects" class="tab-panel active">
+
+  <!-- Short Form -->
+  <div class="section-label">Short form content — 12 pieces</div>
+  <div class="short-grid" id="short-grid">
+
+    <!-- Replace .card-bg background color with your thumbnail image via CSS background-image -->
+    <!-- Example: style="background-image: url('your-thumb.jpg'); background-size: cover; background-position: center;" -->
+
+    <!-- SHORT CARD TEMPLATE (repeated 12×) — edit title and thumbnail per card -->
+    <div class="short-card">
+      <div class="card-bg" style="background:#1a1010;">
+        <div class="play-btn"><div class="play-tri"></div></div>
+      </div>
+      <div class="card-overlay">
+        <div class="card-title">Reel 01</div>
+        <div class="card-sub">Short form</div>
+      </div>
+      <div class="card-num">01</div>
+    </div>
+
+    <div class="short-card">
+      <div class="card-bg" style="background:#101a10;">
+        <div class="play-btn"><div class="play-tri"></div></div>
+      </div>
+      <div class="card-overlay">
+        <div class="card-title">Story Edit</div>
+        <div class="card-sub">Short form</div>
+      </div>
+      <div class="card-num">02</div>
+    </div>
+
+    <div class="short-card">
+      <div class="card-bg" style="background:#10101a;">
+        <div class="play-btn"><div class="play-tri"></div></div>
+      </div>
+      <div class="card-overlay">
+        <div class="card-title">Viral Cut</div>
+        <div class="card-sub">Short form</div>
+      </div>
+      <div class="card-num">03</div>
+    </div>
+
+    <div class="short-card">
+      <div class="card-bg" style="background:#1a1a10;">
+        <div class="play-btn"><div class="play-tri"></div></div>
+      </div>
+      <div class="card-overlay">
+        <div class="card-title">Trending Edit</div>
+        <div class="card-sub">Short form</div>
+      </div>
+      <div class="card-num">04</div>
+    </div>
+
+    <div class="short-card">
+      <div class="card-bg" style="background:#1a1015;">
+        <div class="play-btn"><div class="play-tri"></div></div>
+      </div>
+      <div class="card-overlay">
+        <div class="card-title">Brand Snap</div>
+        <div class="card-sub">Short form</div>
+      </div>
+      <div class="card-num">05</div>
+    </div>
+
+    <div class="short-card">
+      <div class="card-bg" style="background:#10151a;">
+        <div class="play-btn"><div class="play-tri"></div></div>
+      </div>
+      <div class="card-overlay">
+        <div class="card-title">Hook Clip</div>
+        <div class="card-sub">Short form</div>
+      </div>
+      <div class="card-num">06</div>
+    </div>
+
+    <div class="short-card">
+      <div class="card-bg" style="background:#151a10;">
+        <div class="play-btn"><div class="play-tri"></div></div>
+      </div>
+      <div class="card-overlay">
+        <div class="card-title">Reel 02</div>
+        <div class="card-sub">Short form</div>
+      </div>
+      <div class="card-num">07</div>
+    </div>
+
+    <div class="short-card">
+      <div class="card-bg" style="background:#1a1010;">
+        <div class="play-btn"><div class="play-tri"></div></div>
+      </div>
+      <div class="card-overlay">
+        <div class="card-title">Quick Cut</div>
+        <div class="card-sub">Short form</div>
+      </div>
+      <div class="card-num">08</div>
+    </div>
+
+    <div class="short-card">
+      <div class="card-bg" style="background:#0d1a0d;">
+        <div class="play-btn"><div class="play-tri"></div></div>
+      </div>
+      <div class="card-overlay">
+        <div class="card-title">Ad Spot</div>
+        <div class="card-sub">Short form</div>
+      </div>
+      <div class="card-num">09</div>
+    </div>
+
+    <div class="short-card">
+      <div class="card-bg" style="background:#1a0d1a;">
+        <div class="play-btn"><div class="play-tri"></div></div>
+      </div>
+      <div class="card-overlay">
+        <div class="card-title">Collab Reel</div>
+        <div class="card-sub">Short form</div>
+      </div>
+      <div class="card-num">10</div>
+    </div>
+
+    <div class="short-card">
+      <div class="card-bg" style="background:#10101a;">
+        <div class="play-btn"><div class="play-tri"></div></div>
+      </div>
+      <div class="card-overlay">
+        <div class="card-title">Event Story</div>
+        <div class="card-sub">Short form</div>
+      </div>
+      <div class="card-num">11</div>
+    </div>
+
+    <div class="short-card">
+      <div class="card-bg" style="background:#1a1a0d;">
+        <div class="play-btn"><div class="play-tri"></div></div>
+      </div>
+      <div class="card-overlay">
+        <div class="card-title">Product Shot</div>
+        <div class="card-sub">Short form</div>
+      </div>
+      <div class="card-num">12</div>
+    </div>
+
+  </div><!-- /short-grid -->
+
+  <hr class="section-divider">
+
+  <!-- Long Form -->
+  <div class="section-label">Long form content — 6 pieces</div>
+  <div class="long-grid" id="long-grid">
+
+    <div class="long-card">
+      <div class="card-bg" style="background:#110d0d;">
+        <div class="play-btn"><div class="play-tri"></div></div>
+      </div>
+      <div class="card-overlay">
+        <div class="card-title">Documentary Cut</div>
+        <div class="card-sub">Long form</div>
+      </div>
+      <div class="card-num">01</div>
+    </div>
+
+    <div class="long-card">
+      <div class="card-bg" style="background:#0d110d;">
+        <div class="play-btn"><div class="play-tri"></div></div>
+      </div>
+      <div class="card-overlay">
+        <div class="card-title">Brand Film</div>
+        <div class="card-sub">Long form</div>
+      </div>
+      <div class="card-num">02</div>
+    </div>
+
+    <div class="long-card">
+      <div class="card-bg" style="background:#0d0d11;">
+        <div class="play-btn"><div class="play-tri"></div></div>
+      </div>
+      <div class="card-overlay">
+        <div class="card-title">Event Recap</div>
+        <div class="card-sub">Long form</div>
+      </div>
+      <div class="card-num">03</div>
+    </div>
+
+    <div class="long-card">
+      <div class="card-bg" style="background:#11110d;">
+        <div class="play-btn"><div class="play-tri"></div></div>
+      </div>
+      <div class="card-overlay">
+        <div class="card-title">Wedding Edit</div>
+        <div class="card-sub">Long form</div>
+      </div>
+      <div class="card-num">04</div>
+    </div>
+
+    <div class="long-card">
+      <div class="card-bg" style="background:#110d11;">
+        <div class="play-btn"><div class="play-tri"></div></div>
+      </div>
+      <div class="card-overlay">
+        <div class="card-title">Corporate Video</div>
+        <div class="card-sub">Long form</div>
+      </div>
+      <div class="card-num">05</div>
+    </div>
+
+    <div class="long-card">
+      <div class="card-bg" style="background:#0d1111;">
+        <div class="play-btn"><div class="play-tri"></div></div>
+      </div>
+      <div class="card-overlay">
+        <div class="card-title">Mini Doc</div>
+        <div class="card-sub">Long form</div>
+      </div>
+      <div class="card-num">06</div>
+    </div>
+
+  </div><!-- /long-grid -->
+</div><!-- /panel-projects -->
+
+
+<!-- ══════════════════════════════
+     TAB 2 — BRANDS
+══════════════════════════════ -->
+<div id="panel-brands" class="tab-panel">
+
+  <div class="brands-intro">
+    <div class="eyebrow">Trusted by</div>
+    <h2>Brands I've worked with</h2>
+  </div>
+
+  <!-- Slider Row 1 (brands 1–9) — forward -->
+  <div class="slider-wrap">
+    <div class="fade-left"></div>
+    <div class="fade-right"></div>
+    <div class="slider-track" id="row1-track">
+      <!-- JS duplicates these for seamless loop -->
+      <div class="brand-item"><div class="brand-logo">NK</div><div class="brand-name">Nike</div></div>
+      <div class="brand-item"><div class="brand-logo">AP</div><div class="brand-name">Apple</div></div>
+      <div class="brand-item"><div class="brand-logo">SN</div><div class="brand-name">Sony</div></div>
+      <div class="brand-item"><div class="brand-logo">AD</div><div class="brand-name">Adobe</div></div>
+      <div class="brand-item"><div class="brand-logo">NF</div><div class="brand-name">Netflix</div></div>
+      <div class="brand-item"><div class="brand-logo">SP</div><div class="brand-name">Spotify</div></div>
+      <div class="brand-item"><div class="brand-logo">GG</div><div class="brand-name">Google</div></div>
+      <div class="brand-item"><div class="brand-logo">MT</div><div class="brand-name">Meta</div></div>
+      <div class="brand-item"><div class="brand-logo">AZ</div><div class="brand-name">Amazon</div></div>
+    </div>
+  </div>
+
+  <!-- Slider Row 2 (brands 10–18) — reverse -->
+  <div class="slider-wrap slider-gap">
+    <div class="fade-left"></div>
+    <div class="fade-right"></div>
+    <div class="slider-track reverse" id="row2-track">
+      <div class="brand-item"><div class="brand-logo">RB</div><div class="brand-name">Red Bull</div></div>
+      <div class="brand-item"><div class="brand-logo">PM</div><div class="brand-name">Puma</div></div>
+      <div class="brand-item"><div class="brand-logo">VN</div><div class="brand-name">Vans</div></div>
+      <div class="brand-item"><div class="brand-logo">CN</div><div class="brand-name">Canon</div></div>
+      <div class="brand-item"><div class="brand-logo">DJ</div><div class="brand-name">DJI</div></div>
+      <div class="brand-item"><div class="brand-logo">LX</div><div class="brand-name">Lumix</div></div>
+      <div class="brand-item"><div class="brand-logo">BT</div><div class="brand-name">Beats</div></div>
+      <div class="brand-item"><div class="brand-logo">NT</div><div class="brand-name">Notion</div></div>
+      <div class="brand-item"><div class="brand-logo">FG</div><div class="brand-name">Figma</div></div>
+    </div>
+  </div>
+
+</div><!-- /panel-brands -->
+
+
+<script>
+  /* ── Tab switching ── */
+  function switchTab(name, btn) {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('panel-' + name).classList.add('active');
+  }
+
+  /* ── Duplicate brand items for seamless infinite scroll ── */
+  ['row1-track', 'row2-track'].forEach(id => {
+    const track = document.getElementById(id);
+    const items = Array.from(track.children);
+    items.forEach(item => {
+      const clone = item.cloneNode(true);
+      track.appendChild(clone);
+    });
+  });
+
+  /*
+   ┌─────────────────────────────────────────────────────────────────┐
+   │  HOW TO CUSTOMISE                                               │
+   │                                                                 │
+   │  THUMBNAILS                                                     │
+   │  Replace the background color of each .card-bg with:           │
+   │  style="background-image: url('your-image.jpg');               │
+   │          background-size: cover; background-position: center;" │
+   │                                                                 │
+   │  VIDEO LINKS                                                    │
+   │  Add onclick="window.open('https://...', '_blank')"            │
+   │  to any .short-card or .long-card div                          │
+   │                                                                 │
+   │  BRAND LOGOS                                                    │
+   │  Replace the two-letter abbr inside .brand-logo with an        │
+   │  <img> tag pointing to your logo SVG/PNG                       │
+   │  e.g. <img src="nike-logo.svg" width="24" height="24">         │
+   │                                                                 │
+   │  FRAMER EMBED                                                   │
+   │  In Framer → Insert → Embed → Custom Code                      │
+   │  Paste this entire file. Set height to 100vh or auto.          │
+   └─────────────────────────────────────────────────────────────────┘
+  */
+</script>
+
+</body>
+</html>
